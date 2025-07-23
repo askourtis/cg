@@ -1,22 +1,34 @@
+# %% Imports
+from random import random
+
 from compas.colors import Color
-from compas.geometry import Box
+from compas.geometry import Box, Sphere, Cylinder
 from compas.geometry import Frame
 from compas.geometry import Translation
 from compas_viewer import Viewer
+from compas.files import OBJ, STL
+from compas.datastructures import Mesh
 
+
+import numpy as np
+from sklearn.manifold import Isomap
+from skimage.feature import hog
+import matplotlib.pyplot as plt
+
+from surface_clustering import surface_clustering
+
+# %% load the scene mesh and part mesh
+scene_mesh = Mesh.from_stl('model.stl')
+part_mesh = Mesh.from_stl('part.stl')
+
+# %% Surface clustering
+labels = surface_clustering(part_mesh.copy(), 1e-3)
+fcol = {k: Color.from_i(l/10) for k, l in labels.items()}
+
+# %% Visualize the clustering result
 viewer = Viewer()
-
-box = Box(1, 1, 1, Frame((0, 0, 0), [1, 0, 0], [0, 1, 0]))
-obj1 = viewer.scene.add(box, surfacecolor=Color(1.0, 0.0, 0.0), opacity=0.7)
-
-box = Box(1, 1, 1, Frame((0, 0, 0), [1, 0, 0], [0, 1, 0]))
-obj2 = viewer.scene.add(box, surfacecolor=Color(0.0, 1.0, 0.0), opacity=0.7)
-
-box = Box(1, 1, 1, Frame((0, 0, 0), [1, 0, 0], [0, 1, 0]))
-obj3 = viewer.scene.add(box, surfacecolor=Color(0.0, 0.0, 1.0), opacity=0.7)
-
-
-obj2.transformation = Translation.from_vector([2, 0, 0])
-obj3.transformation = Translation.from_vector([4, 0, 0])
-
+viewer.scene.clear()
+#render mesh with vertex colors, faces, verticies, edges
+obj1 = viewer.scene.add(part_mesh, facecolor=fcol, show_faces=True, show_vertices=True, show_edges=True)
 viewer.show()
+# %%
