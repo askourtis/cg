@@ -10,14 +10,18 @@ scene_mesh = Mesh.from_stl('scene.stl')
 part_mesh = Mesh.from_stl('part.stl')
 
 # %% Surface clustering
-labels = surface_extraction_area_expansion(part_mesh, threshold=0.95, min_faces=4)
+labels = surface_extraction_area_expansion(scene_mesh, threshold=0.95, min_faces=4)
 fcol = {k: Color.from_number(l/max(labels.values())) if l != 0 else Color.black() for k, l in labels.items()}
+
+
+# %% Map part mesh to feature vector
+
 
 
 # %% Visualize the clustering result
 viewer = Viewer()
 viewer.scene.clear()
 #render mesh with vertex colors, faces, verticies, edges
-obj1 = viewer.scene.add(part_mesh, facecolor=fcol, show_faces=True, show_vertices=True, show_edges=True)
+obj1 = viewer.scene.add(scene_mesh, facecolor=fcol, show_faces=True, show_vertices=True, show_edges=True)
 viewer.show()
 # %%

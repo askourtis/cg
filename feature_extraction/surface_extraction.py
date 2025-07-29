@@ -36,12 +36,13 @@ def expand_face_surface(face: int, mesh: Mesh, labels: Dict[int, int], current_l
             if similarity >= threshold:
                 stack.append(adjacent_face)
 
-def filter_out_small_surfaces(labels: Dict[int, int], min_faces):
+def filter_out_surfaces_based_on_number_of_faces(labels: Dict[int, int], min_faces: int, max_faces: int) -> None:
     """Filter out small surfaces based on the number of faces.
 
     Arguments:
         labels: A dictionary mapping face indices to their labels.
         min_faces: The minimum number of faces required for a surface to be retained.
+        max_faces: The maximum number of faces allowed for a surface to be retained.
     """
     face_counts = {label: 0 for label in set(labels.values())}
 
@@ -49,14 +50,20 @@ def filter_out_small_surfaces(labels: Dict[int, int], min_faces):
         face_counts[label] += 1
 
     for label in labels.values():
-        if face_counts.get(label, 0) > min_faces:
+        if label == 0:
             continue
+
+        f_count = face_counts.get(label, 0)
+        if f_count >= min_faces:
+            if max_faces == 0 or f_count <= max_faces:
+                continue
+
         for f, l in labels.items():
             if l == label:
                 labels[f] = 0
 
 
-def surface_extraction_area_expansion(mesh: Mesh, *, threshold: float = 0.9, min_faces: int = 4) -> Dict[int, int]:
+def area_expansion(mesh: Mesh, *, threshold: float = 0.9, min_faces: int = 4, max_faces: int = 0) -> Dict[int, int]:
     """An iterative process to cluster the surface of a mesh based on surface normal similarity.
     Arguments:
         mesh: The mesh to operate on.
@@ -79,5 +86,5 @@ def surface_extraction_area_expansion(mesh: Mesh, *, threshold: float = 0.9, min
 
         current_label += 1
 
-    filter_out_small_surfaces(labels, min_faces)
+    filter_out_surfaces_based_on_number_of_faces(labels, min_faces, max_faces)
     return labels
