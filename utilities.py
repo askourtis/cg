@@ -1,3 +1,18 @@
+"""
+Utility Functions for 3D Mesh Processing
+
+This module provides essential utility functions for mesh manipulation,
+feature extraction, and geometric analysis used throughout the pattern
+matching pipeline.
+
+Functions:
+    labels_to_meshes: Convert face labels to separate mesh objects
+    vertices_to_features: Extract geometric features from mesh vertices
+
+The feature extraction focuses on local geometric properties such as
+curvature and spatial relationships that are useful for pattern matching.
+"""
+
 from compas.datastructures import Mesh
 
 from typing import Dict
@@ -6,14 +21,25 @@ import numpy as np
 
 
 def labels_to_meshes(mesh: Mesh, labels: Dict[int, int]) -> Dict[int, Mesh]:
-    """Convert labels to separate meshes.
+    """Convert face labels to separate mesh objects.
 
-    Arguments:
-        mesh: The original mesh.
-        labels: A dictionary mapping face indices to their labels.
+    Takes a mesh with labeled faces and creates individual mesh objects
+    for each label group. This is useful for processing clustered surface
+    regions independently.
+
+    Args:
+        mesh: The original mesh containing all faces.
+        labels: A dictionary mapping face indices to their cluster labels.
+                Label 0 typically indicates unlabeled/background faces.
 
     Returns:
-        A dictionary mapping labels to submeshes."""
+        A dictionary mapping labels to their corresponding submesh objects.
+        Each submesh contains only the faces with that specific label.
+
+    Note:
+        The function automatically removes unused vertices from each submesh
+        to ensure clean geometry.
+    """
 
     meshes = {}
     for label in set(labels.values()):
@@ -26,14 +52,27 @@ def labels_to_meshes(mesh: Mesh, labels: Dict[int, int]) -> Dict[int, Mesh]:
 
 
 def vertices_to_features(mesh: Mesh) -> Dict[int, np.ndarray]:
-    """Map vertices to feature vectors.
+    """Extract geometric feature vectors from mesh vertices.
 
-    Arguments:
+    Computes characteristic geometric properties for each vertex that can
+    be used for pattern matching and surface analysis. Features are
+    normalized to ensure scale-invariant comparison.
+
+    Args:
         mesh: The mesh to extract features from.
 
     Returns:
-        A dictionary mapping vertex indices to feature vectors."""
+        A dictionary mapping vertex indices to normalized feature vectors.
+        Each feature vector contains:
+        - Average distance to all other vertices (global shape context)
+        - Local curvature estimate (local surface characteristics)
 
+    Note:
+        Features are normalized by their maximum values across all vertices
+        to ensure values are in the range [0, 1] for consistent comparison.
+    """
+
+    # TODO: Use dependency injection for feature extraction functions
     def vertex_avg_distance_from_all(mesh: Mesh, vertex: int) -> float:
         """Calculate the average distance of a vertex to all other vertices."""
         vertices = np.array(mesh.vertices_attributes('xyz'))

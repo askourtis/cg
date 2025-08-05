@@ -1,3 +1,15 @@
+"""
+Surface Extraction and Clustering Algorithms
+
+This module implements algorithms for segmenting 3D meshes into distinct
+surface regions based on geometric properties, primarily surface normal
+similarity. The main algorithm uses region growing to cluster faces with
+similar orientations.
+
+Functions:
+    area_expansion: Main interface for surface clustering with configurable parameters
+"""
+
 from typing import Dict
 
 import numpy as np
@@ -6,14 +18,24 @@ from compas.datastructures import Mesh
 
 
 def expand_face_surface(face: int, mesh: Mesh, labels: Dict[int, int], current_label: int, threshold: float) -> None:
-    """Given a starting face, cluster one surface region of the mesh, based on surface normal similarity.
+    """Perform region growing to cluster one surface region based on normal similarity.
 
-    Arguments:
-        face: The starting face index.
+    Starting from a seed face, this function uses a breadth-first search approach
+    to find all connected faces with similar surface normals. This implements
+    the core region growing algorithm for surface segmentation.
+
+    Args:
+        face: The starting face index (seed for region growing).
         mesh: The mesh to operate on.
         labels: A dictionary mapping face indices to their labels.
-        current_label: The label to assign to the clustered faces.
-        threshold: The cosine similarity threshold for clustering.
+               Modified in-place during clustering.
+        current_label: The label to assign to faces in this cluster.
+        threshold: The cosine similarity threshold for including adjacent faces.
+                  Range: [0, 1] where 1 = identical normals, 0 = perpendicular.
+
+    Note:
+        This function modifies the labels dictionary in-place. Faces with
+        label 0 are considered unlabeled and available for clustering.
     """
     stack = [face]
 
@@ -37,12 +59,23 @@ def expand_face_surface(face: int, mesh: Mesh, labels: Dict[int, int], current_l
                 stack.append(adjacent_face)
 
 def filter_out_surfaces_based_on_number_of_faces(labels: Dict[int, int], min_faces: int, max_faces: int) -> None:
-    """Filter out small surfaces based on the number of faces.
+    """Remove surface clusters that don't meet size criteria.
 
-    Arguments:
+    Filters out clusters that are too small (noise) or too large (over-segmentation)
+    by resetting their labels to 0 (unlabeled). This helps ensure that only
+    meaningful surface regions are retained for pattern matching.
+
+    Args:
         labels: A dictionary mapping face indices to their labels.
+               Modified in-place during filtering.
         min_faces: The minimum number of faces required for a surface to be retained.
+                  Clusters smaller than this are considered noise.
         max_faces: The maximum number of faces allowed for a surface to be retained.
+                  Set to 0 to disable maximum size filtering.
+
+    Note:
+        This function modifies the labels dictionary in-place, setting filtered
+        cluster faces back to label 0 (unlabeled).
     """
     face_counts = {label: 0 for label in set(labels.values())}
 
@@ -64,13 +97,31 @@ def filter_out_surfaces_based_on_number_of_faces(labels: Dict[int, int], min_fac
 
 
 def area_expansion(mesh: Mesh, *, threshold: float = 0.9, min_faces: int = 4, max_faces: int = 0) -> Dict[int, int]:
-    """An iterative process to cluster the surface of a mesh based on surface normal similarity.
-    Arguments:
-        mesh: The mesh to operate on.
-        threshold: The cosine similarity threshold for clustering.
+    """Cluster mesh surfaces using iterative region growing based on normal similarity.
+
+    This is the main interface for surface clustering. It repeatedly finds unlabeled
+    faces and grows surface regions from them until all faces are either clustered
+    or determined to be noise.
+
+    Args:
+        mesh: The mesh to cluster into surface regions.
+        threshold: The cosine similarity threshold for clustering (0.0-1.0).
+                  Higher values create more distinct/separated clusters.
+                  Typical range: 0.8-0.99
         min_faces: The minimum number of faces required for a surface to be retained.
+                  Smaller clusters are filtered out as noise.
+        max_faces: The maximum number of faces allowed for a surface to be retained.
+                  Set to 0 to disable maximum size filtering. Useful to prevent
+                  over-clustering of large flat surfaces.
+
     Returns:
-        A dictionary mapping face indices to their labels, where 0 indicates unlabelled faces.
+        A dictionary mapping face indices to their cluster labels.
+        Label 0 indicates unlabeled faces (noise or filtered out).
+        Labels 1, 2, 3, ... indicate distinct surface clusters.
+
+    Example:
+        >>> labels = area_expansion(mesh, threshold=0.95, min_faces=10, max_faces=300)
+        >>> num_clusters = len(set(labels.values())) - 1  # -1 to exclude label 0
     """
     labels = {k: 0 for k in mesh.face}
 

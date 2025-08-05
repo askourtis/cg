@@ -17,7 +17,7 @@ import compas
 from compas_viewer import Viewer
 
 # %% 1. Load mesh
-mesh = Mesh.from_stl("part.stl")  # built-in mesh (triangular)
+mesh = Mesh.from_stl("resources/part.stl")  # built-in mesh (triangular)
 
 # Index vertices
 vertex_index = {v: i for i, v in enumerate(mesh.vertices())}

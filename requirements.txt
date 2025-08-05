@@ -1,0 +1,18 @@
+# Core computational framework
+compas>=2.13.0
+compas-viewer>=1.6.1
+
+# Scientific computing
+numpy>=2.3.1
+scipy>=1.16.0
+
+# Machine learning
+scikit-learn>=1.7.1
+
+# Visualization and plotting
+matplotlib>=3.10.3
+
+# Additional dependencies that might be needed
+# Uncomment if required:
+# ipympl>=0.9.0  # For interactive matplotlib in Jupyter
+# jupyter>=1.0.0  # If running in notebooks
